@@ -1,0 +1,62 @@
+---
+- name: (Opinionated) Setup WSL2 (Ubuntu 22.04) using Ansible
+  hosts: localhost
+  gather_facts: false
+  vars:
+    homebrew_packages:
+      - tree
+      - podman
+      - hugo
+      - jq
+      - yq
+      - terraform
+      - hcloud
+      - poetry
+    apt_packages:
+      # Required to remove warnings with podman
+      - buildah
+      # Required for podman to work
+      - uidmap
+  pre_tasks:
+    - name: Install curl via apt
+      ansible.builtin.apt:
+        name:
+          - curl
+        update_cache: true
+        cache_valid_time: 14400
+        state: present
+      become: true
+
+    - name: Check whether Homebrew is installed
+      ansible.builtin.stat:
+        path: /home/linuxbrew/.linuxbrew/bin/brew
+      register: homebrew_check
+
+    - name: Install Homebrew
+      when: not homebrew_check.stat.exists
+      block:
+        - name: Install Homebrew # noqa no-changed-when
+          ansible.builtin.shell:
+            cmd: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+        - name: Add Homebrew to PATH via ~/.profile
+          ansible.builtin.lineinfile:
+            path: ~/.profile
+            line: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+            create: true
+            mode: u=rw,g=r,o=r
+            state: present
+
+  tasks:
+    - name: Install Homebrew packages
+      community.general.homebrew:
+        name: "{{ homebrew_packages }}"
+        state: present
+
+    - name: Install packages not available via Homebrew
+      ansible.builtin.apt:
+        name: "{{ apt_packages }}"
+        update_cache: true
+        cache_valid_time: 14400
+        state: present
+      become: true

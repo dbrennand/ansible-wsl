@@ -13,4 +13,4 @@ ansible-playbook --ask-become-pass ansible-wsl.yml
 # Cleanup
 # Uninstall the initial system packages as we have the equivilents installed via homebrew
 sudo apt-get purge python3-pip python3.10-venv -y
-rm -rf ~/.venv/
+rm -rf ~/.venv/ansible-wsl

@@ -12,6 +12,7 @@
       - terraform
       - hcloud
       - poetry
+      - pyenv
     apt_packages:
       # Required to remove warnings with podman
       - buildah
@@ -20,8 +21,7 @@
   pre_tasks:
     - name: Install curl via apt
       ansible.builtin.apt:
-        name:
-          - curl
+        name: curl
         update_cache: true
         cache_valid_time: 14400
         state: present
@@ -39,10 +39,10 @@
           ansible.builtin.shell:
             cmd: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-        - name: Add Homebrew to PATH via ~/.profile
+        - name: Add Homebrew to PATH via ~/.bashrc
           ansible.builtin.lineinfile:
-            path: ~/.profile
-            line: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+            path: ~/.bashrc
+            line: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
             create: true
             mode: u=rw,g=r,o=r
             state: present
@@ -60,3 +60,15 @@
         cache_valid_time: 14400
         state: present
       become: true
+
+    - name: Configure Bash for Pyenv
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        line: "{{ item }}"
+        create: true
+        mode: u=rw,g=r,o=r
+        state: present
+      with_items:
+        - 'export PYENV_ROOT="$HOME/.pyenv"'
+        - 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"'
+        - 'eval "$(pyenv init -)"'

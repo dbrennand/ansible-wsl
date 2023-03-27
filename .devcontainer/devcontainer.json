@@ -4,7 +4,10 @@
         "vscode": {
             "extensions": [
                 "streetsidesoftware.code-spell-checker",
-                "redhat.ansible"
+                "redhat.ansible",
+                "github.copilot",
+                "eamodio.gitlens",
+                "yzhang.markdown-all-in-one"
             ]
         }
     }

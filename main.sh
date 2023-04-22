@@ -6,7 +6,7 @@ mkdir -pv ~/.venv && python3 -m venv ~/.venv/ansible-wsl
 # Activate venv
 source ~/.venv/ansible-wsl/bin/activate
 # Install Ansible and required dependencies
-python -m pip install ansible==7.1.0
+python -m pip install ansible==7.4.0
 ansible-galaxy install -r requirements.yml
 # Run the Ansible playbook
 ansible-playbook --ask-become-pass ansible-wsl.yml

@@ -1,33 +1,24 @@
 ---
 - name: (Opinionated) Setup WSL2 (Ubuntu 22.04) using Ansible
   hosts: localhost
-  gather_facts: false
-  vars:
-    homebrew_packages:
-      - tree
-      - podman
-      - hugo
-      - jq
-      - yq
-      - terraform
-      - hcloud
-      - poetry
-      - pyenv
-    apt_packages:
-      # Required to remove warnings with podman
-      - buildah
-      # Required for podman to work
-      - uidmap
+  vars_files:
+    - vars/main.yml
   pre_tasks:
-    - name: Install curl via apt
+    - name: Update all packages
       ansible.builtin.apt:
-        name: curl
+        name: "*"
         update_cache: true
         cache_valid_time: 14400
+        state: latest
+      become: true
+
+    - name: Ensure curl is installed
+      ansible.builtin.apt:
+        name: curl
         state: present
       become: true
 
-    - name: Check whether Homebrew is installed
+    - name: Check Homebrew is installed
       ansible.builtin.stat:
         path: /home/linuxbrew/.linuxbrew/bin/brew
       register: homebrew_check
@@ -36,39 +27,98 @@
       when: not homebrew_check.stat.exists
       block:
         - name: Install Homebrew # noqa no-changed-when
+          # https://brew.sh/
           ansible.builtin.shell:
             cmd: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-        - name: Add Homebrew to PATH via ~/.bashrc
+        - name: "Install Homebrew | Add Homebrew to PATH via /home/{{ ansible_user_id }}/.bashrc"
           ansible.builtin.lineinfile:
-            path: ~/.bashrc
+            path: "/home/{{ ansible_user_id }}/.bashrc"
             line: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
             create: true
             mode: u=rw,g=r,o=r
             state: present
 
   tasks:
+    - name: Install apt packages
+      ansible.builtin.apt:
+        name: "{{ apt_packages }}"
+        state: present
+      become: true
+
     - name: Install Homebrew packages
       community.general.homebrew:
         name: "{{ homebrew_packages }}"
         state: present
 
-    - name: Install packages not available via Homebrew
-      ansible.builtin.apt:
-        name: "{{ apt_packages }}"
-        update_cache: true
-        cache_valid_time: 14400
-        state: present
+    - name: Ensure systemd is enabled in WSL
+      ansible.builtin.copy:
+        src: files/wsl.conf
+        dest: /etc/wsl.conf
+        mode: u=rw,g=r,o=r
       become: true
 
-    - name: Configure Bash for Pyenv
-      ansible.builtin.lineinfile:
-        path: ~/.bashrc
-        line: "{{ item }}"
+    - name: "Configure /home/{{ ansible_user_id }}/.bashrc"
+      ansible.builtin.blockinfile:
+        path: "/home/{{ ansible_user_id }}/.bashrc"
+        block: "{{ lookup('file', 'files/.bashrc') }}"
         create: true
         mode: u=rw,g=r,o=r
         state: present
-      with_items:
-        - 'export PYENV_ROOT="$HOME/.pyenv"'
-        - 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"'
-        - 'eval "$(pyenv init -)"'
+
+    - name: Configure Git username
+      community.general.git_config:
+        name: user.name
+        scope: global
+        value: "{{ git_username }}"
+
+    - name: Configure Git email
+      community.general.git_config:
+        name: user.email
+        scope: global
+        value: "{{ git_email }}"
+
+    - name: Copy SSH keys from Windows
+      when: copy_ssh_keys
+      block:
+        - name: "Copy SSH keys from Windows | Ensure /home/{{ ansible_user_id }}/.ssh/ exists" # noqa name[template]
+          ansible.builtin.file:
+            path: "/home/{{ ansible_user_id }}/.ssh/"
+            mode: u=rwx,g=,o=
+            state: directory
+
+        - name: Copy SSH keys from Windows | Copy public and private keys # noqa risky-file-permissions
+          ansible.builtin.copy:
+            src: "{{ item }}"
+            dest: "/home/{{ ansible_user_id }}/.ssh/"
+          with_fileglob:
+            - "/mnt/c/Users/{{ windows_username }}/.ssh/id_*"
+
+        - name: Copy SSH keys from Windows | Fix public key permissions
+          ansible.builtin.file:
+            path: "{{ item }}"
+            mode: u=rw,g=r,o=r
+          with_fileglob:
+            - "/home/{{ ansible_user_id }}/.ssh/id_*.pub"
+
+        - name: Copy SSH keys from Windows | Get list of private keys
+          ansible.builtin.find:
+            path:
+              - "/home/{{ ansible_user_id }}/.ssh/"
+            file_type: file
+            patterns:
+              - "id_*"
+            excludes:
+              - "*.pub"
+          register: private_keys
+
+        - name: Copy SSH keys from Windows | Fix private key permissions
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            mode: u=rw,g=,o=
+          with_items:
+            - "{{ private_keys.files }}"
+
+    - name: All done! 🚀✨
+      ansible.builtin.debug:
+        msg: All done! 🚀✨

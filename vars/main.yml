@@ -12,7 +12,7 @@ apt_packages:
   # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
   - build-essential
   - libssl-dev
-  - zlib1g-dev \
+  - zlib1g-dev
   - libbz2-dev
   - libreadline-dev
   - libsqlite3-dev

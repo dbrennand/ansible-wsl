@@ -4,14 +4,22 @@
 
 The majority of packages are installed using [Homebrew](https://brew.sh/) (where possible). I chose Homebrew because packages tend to be better maintained and updated with greater frequency than traditional package repositories.
 
-## Dependencies
+## Playbook Variables
 
-* Git
+```yaml
+# Git configuration
+git_username: username
+git_email: email
+```
 
-    ```bash
-    git config --global user.name "<Username>"
-    git config --global user.email "<Email>"
-    ```
+Configure the Git username and email.
+
+```yaml
+copy_ssh_keys: true
+windows_username: username
+```
+
+Whether or not to copy SSH keys from Windows.
 
 ## Usage
 
@@ -21,13 +29,15 @@ The majority of packages are installed using [Homebrew](https://brew.sh/) (where
     git clone https://github.com/dbrennand/ansible-wsl.git && cd ansible-wsl
     ```
 
-2. Run [main.sh](main.sh):
+2. Modify the [vars/main.yml](vars/main.yml) file with the required variables.
+
+3. Run [main.sh](main.sh):
 
     ```bash
     chmod +x main.sh && ./main.sh
     ```
 
-Enjoy ✨
+Enjoy! 🚀✨
 
 ## Contributors
 

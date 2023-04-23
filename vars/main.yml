@@ -1,0 +1,46 @@
+---
+# vars file for ansible-wsl
+
+# Packages to install via apt
+apt_packages:
+  # Required to remove warnings with podman
+  - buildah
+  # Required for podman to work
+  - uidmap
+  - dbus-user-session
+  # Pyenv dependencies to install via apt
+  # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
+  - build-essential
+  - libssl-dev
+  - zlib1g-dev
+  - libbz2-dev
+  - libreadline-dev
+  - libsqlite3-dev
+  - libncursesw5-dev
+  - xz-utils
+  - tk-dev
+  - libxml2-dev
+  - libxmlsec1-dev
+  - libffi-dev
+  - liblzma-dev
+
+# Packages to install via Homebrew
+homebrew_packages:
+  - tree
+  - jq
+  - yq
+  - hugo
+  - terraform
+  - hcloud
+  - poetry
+  - pyenv
+  - podman
+  - skopeo
+
+# Git configuration
+git_username: username
+git_email: email
+
+# Whether or not to copy SSH keys from Windows
+copy_ssh_keys: true
+windows_username: username

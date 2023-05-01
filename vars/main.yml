@@ -36,6 +36,8 @@ homebrew_packages:
   - pyenv
   - podman
   - skopeo
+  # https://github.com/pyenv/pyenv/issues/94#issuecomment-437180736
+  - tcl-tk
 
 # Git configuration
 git_username: username
